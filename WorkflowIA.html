@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow IA - Arquitetura</title>
+    
+    <!-- Tailwind CSS (Estilização) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React e Babel (Core do Sistema) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Fonte Inter (Opcional, para ficar mais bonito) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Animações personalizadas */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+    
+    <!-- Import Map para simular ambiente React moderno no navegador -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "lucide-react": "https://esm.sh/lucide-react@0.263.1"
+        }
+    }
+    </script>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            BookOpen, Sun, Moon, PenTool, Layout, Armchair, Trees, 
+            Sofa, Copy, Check, Menu, X, Zap, Info, Camera, 
+            Sparkles, Loader2, MessageSquare, Image as ImageIcon 
+        } from 'lucide-react';
+
+        // --- CONFIGURAÇÃO DA API ---
+        // OBS: Se for vender o arquivo, instrua o aluno a colocar a chave aqui ou crie um input na UI.
+        const apiKey = ""; 
+
+        const generateWorkflowIAPrompt = async (userInput) => {
+            if (!apiKey) {
+                return "⚠️ Erro: Chave de API não configurada. Por favor, adicione sua API Key do Gemini no código ou solicite ao administrador.";
+            }
+
+            const systemPrompt = `
+                Você é o WorkflowIA, um especialista em Engenharia de Prompts para Arquitetura.
+                Sua missão é transformar descrições simples de usuários em prompts profissionais, detalhados e técnicos para renderização fotorrealista.
+                
+                Siga rigorosamente esta ESTRUTURA PADRÃO KINGAI:
+                1. Comece com: "Solicito a renderização fotorrealista desta imagem..."
+                2. Adicione detalhes sobre fidelidade de materiais e texturas.
+                3. Descreva a iluminação e ambientação baseada no pedido do usuário (se for dia: "céu azul límpido"; se for noite: "blue hour", "2700K").
+                4. Adicione detalhes de paisagismo e contexto.
+                5. OBRIGATÓRIO: Termine com o bloco de proteção de arquitetura: "É imprescindível que o enquadramento original seja rigorosamente preservado... Nenhum elemento da composição principal deve ser alterado."
+
+                Mantenha o tom profissional, técnico e em Português do Brasil.
+            `;
+
+            try {
+                const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userInput }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    }),
+                }
+                );
+
+                if (!response.ok) throw new Error('Falha na conexão com a API');
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Erro ao gerar o prompt.";
+            } catch (error) {
+                console.error("Erro na API:", error);
+                return "Desculpe, houve um erro ao conectar com a inteligência WorkflowIA.";
+            }
+        };
+
+        // --- DADOS (SEU CONTEÚDO ORIGINAL) ---
+        const mainPrompts = {
+            setup: {
+                title: "Configuração Inicial",
+                content: "Para obter os melhores resultados...",
+                steps: [
+                    "Acesse o Gemini.",
+                    "No menu de modelos, selecione a opção 'Pro' (Gemini 1.5 Pro ou superior).",
+                    "O modelo Pro pensa mais para raciocínio e programação.",
+                    "DICA: A IA aprende com tentativas. Teste múltiplas vezes."
+                ]
+            },
+            masterExterior: [
+                {
+                    title: "Exterior Dia (Mais Usado)",
+                    icon: <Sun className="w-6 h-6 text-yellow-400" />,
+                    description: "Renderização fotorrealista diurna com céu azul e paisagismo tropical.",
+                    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80", 
+                    prompt: `Solicito a renderização fotorrealista desta imagem, com atenção especial à fidelidade dos materiais e acabamentos. Todos os revestimentos, texturas e elementos construtivos devem ser reproduzidos com máximo realismo, mantendo as características e propriedades visuais apresentadas na fotografia de referência anexada.\n\nA ambientação deve retratar um cenário diurno, com céu azul límpido, iluminação solar natural e projeção adequada de sombras conforme a incidência da luz. A qualidade fotográfica deve ser primorosa, simulando uma captura profissional com profundidade, nitidez e equilíbrio cromático.\n\nPara a composição do plano de fundo e horizonte, solicito a inserção de paisagismo tropical moderado e equilibrado, evitando excessos que possam comprometer o protagonismo da edificação principal. Complementar a cena com algumas unidades residenciais de condomínio moderno, seguindo os padrões arquitetônicos contemporâneos brasileiros, de forma sutil e harmoniosa.\n\nÉ imprescindível que o enquadramento original seja rigorosamente preservado, assim como as linhas do horizonte e todos os aspectos perspectivos da imagem anexada. Nenhum elemento da composição principal deve ser alterado, modificado ou reposicionado, garantindo total fidelidade à referência fotográfica fornecida.`
+                },
+                {
+                    title: "Exterior Noite (Blue Hour)",
+                    icon: <Moon className="w-6 h-6 text-blue-400" />,
+                    description: "Cenário crepuscular com iluminação artificial quente (2700K-3000K).",
+                    image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+                    prompt: `Solicito a renderização fotorrealista desta imagem, com atenção especial à fidelidade dos materiais e acabamentos. Todos os revestimentos, texturas e elementos construtivos devem ser reproduzidos com máximo realismo, mantendo as características e propriedades visuais apresentadas na fotografia de referência anexada.\n\nA ambientação deve retratar o período crepuscular, conhecido como "blue hour" ou quase noite, caracterizado pelo céu azul profundo típico deste momento de transição entre o dia e a noite. A qualidade fotográfica deve ser primorosa, simulando uma captura profissional com profundidade, nitidez e equilíbrio cromático adequados a este horário específico.\n\nImplementar iluminação artificial em temperatura de cor branco quente (aproximadamente 2700K a 3000K) destacando estrategicamente as vegetações do projeto paisagístico e a edificação principal. A iluminação deve criar uma atmosfera acolhedora e sofisticada, com distribuição equilibrada e natural das fontes de luz, evitando excessos ou áreas super expostas.\n\nPara a composição do plano de fundo e horizonte, solicito a inserção de paisagismo tropical moderado e equilibrado, evitando excessos que possam comprometer o protagonismo da edificação principal. Complementar a cena com algumas unidades residenciais de condomínio moderno, seguindo os padrões arquitetônicos contemporâneos brasileiros, de forma sutil e harmoniosa.\n\nÉ imprescindível que o enquadramento original seja rigorosamente preservado.`
+                }
+            ],
+            workflow: {
+                title: "Workflow IA: Do Zero ao Render Realista",
+                image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80",
+                steps: [
+                    {
+                        title: "Passo 1: Converter em Sketch",
+                        instruction: "Primeiro, peça para a IA transformar seu render básico em um croqui.",
+                        prompt: "Converta em Croqui Estilo Sketch Mantendo as Texturas Originais, sem Aplicação de Sombras e Preservando Fielmente a Paleta de Cores da Imagem Anexada"
+                    },
+                    {
+                        title: "Passo 2: Processar o Croqui",
+                        instruction: "Faça o download da imagem gerada no Passo 1. Inicie uma NOVA conversa no Gemini (Use o modelo Pro). Faça o upload do croqui e use o prompt abaixo."
+                    },
+                    {
+                        title: "Passo 3: Prompt Final",
+                        instruction: "Aplique este prompt na nova conversa com o croqui anexado.",
+                        prompt: `Solicito a renderização fotorrealista desta imagem, com atenção especial à fidelidade dos materiais e acabamentos. Todos os revestimentos, texturas e elementos construtivos devem ser reproduzidos com máximo realismo.\n\nA ambientação deve retratar um cenário diurno, com céu azul límpido, iluminação solar natural e projeção adequada de sombras. A qualidade fotográfica deve ser primorosa.\n\nPara a composição do plano de fundo, solicito a inserção de paisagismo tropical moderado e equilibrado. Complementar a cena com algumas unidades residenciais de condomínio moderno.\n\nÉ imprescindível que o enquadramento original seja rigorosamente preservado, garantindo total fidelidade à referência.`
+                    }
+                ]
+            },
+            interiorMaster: {
+                title: "Master Prompt: Interiores",
+                description: "Transforma prints 3D básicos em fotografia editorial de alta qualidade.",
+                image: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?auto=format&fit=crop&w=800&q=80",
+                prompt: `Solicito a renderização fotorrealista desta imagem, com atenção especial à fidelidade dos materiais e acabamentos. Todos os revestimentos, texturas e elementos construtivos devem ser reproduzidos com máximo realismo.\n\nA ambientação deve retratar um cenário diurno, com iluminação natural suave e sombras realistas. A qualidade fotográfica deve ser primorosa.\n\nÉ imprescindível que o enquadramento original seja rigorosamente preservado.`
+            }
+        };
+
+        const categorizedPrompts = {
+            ambientes: [
+                { title: "1. Sala de Estar", image: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, sombras suaves naturais. Sala de estar com sofá, rack, TV, piso em porcelanato, parede com textura ou pintura lisa, iluminação natural pelas janelas. No horizonte através das janelas, coloque uma paisagem com casas residenciais e vegetações ao fundo. Não alterar nada da arquitetura e layout do projeto em anexo." },
+                { title: "2. Cozinha Gourmet", image: "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, sombras realistas. Cozinha com armários planejados, bancada em granito ou quartzo, fogão cooktop, coifa, geladeira inox, piso em porcelanato. No horizonte através das janelas, coloque uma paisagem com casas residenciais e vegetações ao fundo. Não alterar nada da arquitetura e layout do projeto em anexo." },
+                { title: "3. Suíte Master", image: "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, sombras delicadas. Quarto de casal com cama king size, cabeceira, criados-mudos, guarda-roupa, piso em laminado de madeira ou porcelanato. No horizonte através das janelas, coloque uma paisagem com casas residenciais e vegetações ao fundo. Não alterar nada da arquitetura e layout do projeto em anexo." },
+                { title: "4. Banheiro Suíte", image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, reflexos nos metais e cerâmicas. Banheiro com box de vidro, cuba de apoio ou sobrepor, bancada em mármore ou granito, metals cromados, revestimento cerâmico nas paredes. No horizonte através da janela ou claraboia, coloque uma paisagem com casas residenciais e vegetações ao fundo. Não alterar nada da arquitetura e layout do projeto em anexo." },
+                { title: "5. Área de Serviço", image: "https://images.unsplash.com/photo-1626806819282-2c1dc01a5e0c?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, sombras nos equipamentos. Lavanderia com máquina de lavar, tanque, armários suspensos, varal retrátil ou suspenso, piso em porcelanato antiderrapante. No horizonte através das janelas, coloque uma paisagem com casas residenciais e vegetações ao fundo. Não alterar nada da arquitetura e layout do projeto em anexo." }
+            ],
+            vegetacao: [
+                { title: "1. Jardim Tropical com Palmeiras", image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de paisagismo no aspecto de dia com céu azul e sol, sombras naturais das plantas. Jardim tropical brasileiro com palmeiras imperiais, palmeiras fênix, coqueiros, forração de grama esmeralda, pedras decorativas, iluminação natural intensa. No horizonte ao fundo, coloque uma paisagem com casas residenciais e mais vegetações. Não alterar nada da arquitetura e layout do projeto em anexo." },
+                { title: "2. Jardim com Árvores Frutíferas", image: "https://images.unsplash.com/photo-1557429287-b2e26467fc2b?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de paisagismo no aspecto de dia com céu azul e sol, sombras das copas das árvores. Jardim brasileiro com jabuticabeira, mangueira, limoeiro, bananeira, acerola, grama são carlos, canteiros com flores tropicais. No horizonte ao fundo, coloque uma paisagem com casas residenciais e mais vegetações. Não alterar nada da arquitetura e layout do projeto em anexo." },
+                { title: "3. Jardim Vertical", image: "https://images.unsplash.com/photo-1523575708161-ad0fc2a9b951?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de paisagismo no aspecto de dia com céu azul e sol, sombras das folhagens na parede. Jardim vertical brasileiro com primavera (bougainvillea), alamanda amarela, jasmim dos poetas, hera trepadeira, samambaias pendentes, estruturas metálicas ou madeira. No horizonte ao fundo, coloque uma paisagem com casas residenciais e mais vegetações. Não alterar nada da arquitetura e layout do projeto em anexo." }
+            ],
+            backgrounds: [
+                { title: "1. Urbano Arborizado", image: "https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real with todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, sombras naturais. No horizonte ao fundo através das janelas, coloque uma paisagem brasileira residencial com casas térreas e sobrados modernos, telhados coloniais e contemporâneos, árvores de grande porte como ipês, vegetação densa. Não alterar nada da arquitetura e layout do projeto em anexo." },
+                { title: "2. Condomínio Fechado", image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, sombras suaves. No horizonte ao fundo através das janelas, coloque uma paisagem brasileira de condomínio fechado com casas geminadas em estilo contemporâneo, quintais arborizados, árvores frutíferas, vegetação tropical abundante. Não alterar nada da arquitetura e layout do projeto em anexo." },
+                { title: "3. Litorâneo", image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, luminosidade intensa. No horizonte ao fundo através das janelas, coloque uma paisagem brasileira litorânea com casas de praia em estilo contemporâneo, coqueiros abundantes, restinga costeira, mar ao longe. Não alterar nada da arquitetura e layout do projeto em anexo." }
+            ],
+            moveisExternos: [
+                { title: "1. Sofá Modular Varanda", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663133927804/WuXKRlETdjQnTYNr.png", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, sombras naturais dos móveis. Área externa com sofá modular em alumínio e fibra sintética, almofadas impermeáveis bege ou cinza, mesa de centro retangular com tampo de vidro, piso em porcelanato ou deck. No horizonte ao fundo, coloque uma paisagem com casas residenciais e vegetações." },
+                { title: "2. Espreguiçadeiras Piscina", image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, sombras alongadas. Área externa de piscina com espreguiçadeiras em alumínio com tecido sintético branco ou preto, poltronas lounge, mesa lateral redonda, guarda-sol, deck em madeira cumaru ou porcelanato." }
+            ],
+            moveisSala: [
+                { title: "1. Sofá de Canto com Chaise", image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, sombras naturais dos móveis. Sala de estar com sofá de canto em L com chaise longue, tecido suede ou linho bege/cinza, almofadas decorativas, pés palito em madeira, piso em porcelanato ou laminado. No horizonte através das janelas, coloque uma paisagem com casas residenciais e vegetações ao fundo." },
+                { title: "2. Sofá Retrô", image: "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=800&q=80", prompt: "Renderize essa imagem como se fosse foto real com todos revestimentos reais da foto. Deixe como se fosse uma fotografia profissional de arquitetura no aspecto de dia com céu azul e sol, sombras suaves. Sala de estar com sofá retrô 3 lugares estilo mid-century em veludo mostarda ou verde musgo, duas poltronas individuais com braços em madeira, pés palito, mesa de centro redonda, piso em taco ou porcelanato." }
+            ]
+        };
+
+        // --- COMPONENTES UI ---
+
+        const CopyButton = ({ text }) => {
+            const [copied, setCopied] = useState(false);
+            const handleCopy = () => {
+                navigator.clipboard.writeText(text);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+            return (
+                <button onClick={handleCopy} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${copied ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 hover:bg-yellow-500/20 hover:border-yellow-500'}`}>
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                    {copied ? 'Copiado!' : 'Copiar Prompt'}
+                </button>
+            );
+        };
+
+        const PromptCard = ({ title, prompt, icon, description, image }) => (
+            <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-xl hover:border-yellow-500/30 transition-all mb-6 group">
+                {image && (
+                    <div className="w-full h-48 overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-60 z-10"></div>
+                        <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                        <div className="absolute bottom-3 left-4 z-20 flex items-center gap-2">
+                            <ImageIcon className="text-white/80 w-4 h-4" />
+                            <span className="text-xs text-white/80 font-medium bg-black/30 px-2 py-1 rounded-full backdrop-blur-sm">Exemplo Visual</span>
+                        </div>
+                    </div>
+                )}
+                <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            {icon && <div className="p-2 bg-slate-900 rounded-lg">{icon}</div>}
+                            <div>
+                                <h3 className="text-lg font-bold text-white group-hover:text-yellow-400 transition-colors">{title}</h3>
+                                {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-slate-900/80 rounded-lg p-4 mb-4 border border-slate-700/50">
+                        <p className="text-slate-300 font-mono text-sm leading-relaxed whitespace-pre-wrap">{prompt}</p>
+                    </div>
+                    <div className="flex justify-end"><CopyButton text={prompt} /></div>
+                </div>
+            </div>
+        );
+
+        const SectionHeader = ({ title, icon }) => (
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-slate-700">
+                {icon && <div className="p-2 bg-slate-800 rounded-lg text-yellow-500 shadow-inner">{icon}</div>}
+                <h2 className="text-3xl font-black text-white tracking-tight">{title}</h2>
+            </div>
+        );
+
+        const WarningBox = () => (
+            <div className="bg-red-500/10 border-l-4 border-red-500 p-4 mb-8 rounded-r-lg">
+                <div className="flex items-start gap-3">
+                    <Info className="text-red-500 mt-1 flex-shrink-0" />
+                    <div>
+                        <h4 className="font-bold text-red-400 mb-1">AVISO IMPORTANTE</h4>
+                        <p className="text-slate-300 text-sm">A IA aprende com cada tentativa. É possível que você consiga na primeira imagem, mas normalmente são necessárias algumas tentativas para otimizar a precisão. <span className="font-bold text-white">Teste múltiplas vezes!</span></p>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- PÁGINAS ---
+
+        const PageHome = ({ setSection }) => (
+            <div className="animate-fadeIn">
+                <div className="text-center py-12 px-4">
+                    <div className="inline-block p-4 rounded-full bg-slate-800 mb-6 border border-slate-700 shadow-2xl">
+                        <Zap className="w-12 h-12 text-yellow-500" />
+                    </div>
+                    <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 mb-4">Workflow IA</h1>
+                    <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-8">Guia Definitivo de Prompts para Arquitetura Fotorrealista no Gemini</p>
+                    
+                    <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto text-left">
+                        <div onClick={() => setSection('exterior')} className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-yellow-500/50 cursor-pointer transition-all hover:-translate-y-1 group">
+                            <div className="flex items-center gap-4 mb-3"><Sun className="text-yellow-500 group-hover:scale-110 transition-transform" /><h3 className="text-xl font-bold text-white">Exteriores</h3></div>
+                            <p className="text-slate-400">Prompts fotorrealistas para fachadas, dia e noite, e técnicas de sketch.</p>
+                        </div>
+                        <div onClick={() => setSection('interior')} className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-yellow-500/50 cursor-pointer transition-all hover:-translate-y-1 group">
+                            <div className="flex items-center gap-4 mb-3"><Armchair className="text-blue-500 group-hover:scale-110 transition-transform" /><h3 className="text-xl font-bold text-white">Interiores</h3></div>
+                            <p className="text-slate-400">Transforme prints 3D em fotografia editorial de alta qualidade.</p>
+                        </div>
+                        <a href="https://gemini.google.com/gem/1l8CzTIJzm0MUJCbxX9kSldlEJ9B_bbLh?usp=sharing" target="_blank" rel="noopener noreferrer" className="md:col-span-2 bg-gradient-to-r from-yellow-900/40 to-slate-800 p-6 rounded-xl border border-yellow-500/30 hover:border-yellow-500 cursor-pointer transition-all hover:-translate-y-1 group relative overflow-hidden block">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Sparkles className="w-32 h-32 text-yellow-500" /></div>
+                            <div className="flex items-center gap-4 mb-3 relative z-10">
+                                <div className="p-2 bg-yellow-500/20 rounded-lg"><Sparkles className="text-yellow-400 group-hover:rotate-12 transition-transform" /></div>
+                                <h3 className="text-xl font-bold text-white">Assistente gerador de Prompts para Arquitetura ✨</h3>
+                            </div>
+                            <p className="text-slate-300 relative z-10">Descreva sua ideia simples e deixe a IA WorkflowIA criar o prompt técnico perfeito para você agora mesmo.</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const PageGenerator = () => {
+            const [input, setInput] = useState('');
+            const [result, setResult] = useState('');
+            const [loading, setLoading] = useState(false);
+
+            const handleGenerate = async () => {
+                if (!input.trim()) return;
+                setLoading(true);
+                setResult('');
+                const generated = await generateWorkflowIAPrompt(input);
+                setResult(generated);
+                setLoading(false);
+            };
+
+            return (
+                <div className="animate-fadeIn max-w-3xl mx-auto">
+                    <SectionHeader title="Gerador de Prompts de Arquitetura - Workflow IA" icon={<Sparkles size={24} />} />
+                    <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl mb-8">
+                        <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2"><MessageSquare className="text-yellow-500" size={20} />Descreva sua cena</h3>
+                        <p className="text-slate-400 text-sm mb-4">Ex: "Casa moderna de vidro na beira da praia ao pôr do sol" ou "Quarto infantil com tema espacial".</p>
+                        <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="Digite aqui sua ideia simples..." className="w-full h-32 bg-slate-900 border border-slate-700 rounded-lg p-4 text-white focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-all resize-none mb-4 placeholder:text-slate-600" />
+                        <button onClick={handleGenerate} disabled={loading || !input.trim()} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-slate-900 font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                            {loading ? <><Loader2 className="animate-spin" /> Gerando Prompt Técnico...</> : <><Sparkles /> Gerar Prompt WorkflowIA</>}
+                        </button>
+                    </div>
+                    {result && (
+                        <div className="animate-fadeIn">
+                            <div className="flex items-center gap-2 mb-4"><div className="h-px bg-slate-700 flex-1"></div><span className="text-yellow-500 text-sm font-bold uppercase tracking-wider">Resultado Gerado</span><div className="h-px bg-slate-700 flex-1"></div></div>
+                            <PromptCard title="Seu Prompt Personalizado" prompt={result} icon={<Sparkles className="text-yellow-400" />} description="Este prompt foi estruturado seguindo os padrões rigorosos de fotorrealismo do WorkflowIA." />
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const PageExterior = () => (
+            <div className="animate-fadeIn max-w-4xl mx-auto">
+                <SectionHeader title="Exteriores & Fachadas" icon={<Sun size={24} />} />
+                <WarningBox />
+                <div className="mb-12">
+                    <h3 className="text-xl font-bold text-white mb-6 pl-2 border-l-4 border-yellow-500">Master Prompts</h3>
+                    {mainPrompts.masterExterior.map((item, idx) => <PromptCard key={idx} {...item} />)}
+                </div>
+                <div className="bg-slate-800/30 rounded-2xl p-8 border border-slate-700 mb-12">
+                    <div className="flex items-center gap-3 mb-6"><PenTool className="text-purple-400" size={28} /><h3 className="text-2xl font-bold text-white">{mainPrompts.workflow.title}</h3></div>
+                    <div className="space-y-8">
+                        {mainPrompts.workflow.steps.map((step, idx) => (
+                            <div key={idx} className="relative pl-8 border-l border-slate-700 last:border-0 pb-8 last:pb-0">
+                                <div className="absolute left-[-12px] top-0 w-6 h-6 rounded-full bg-slate-900 border-2 border-purple-500 flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-purple-500"></div></div>
+                                <h4 className="text-lg font-bold text-purple-200 mb-2">{step.title}</h4>
+                                <p className="text-slate-400 mb-4">{step.instruction}</p>
+                                <div className="bg-slate-900 p-4 rounded-lg border border-slate-700/50 flex flex-col gap-3">
+                                    <code className="text-sm text-purple-200 font-mono">{step.prompt}</code>
+                                    <div className="self-end"><CopyButton text={step.prompt} /></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-6 pl-2 border-l-4 border-green-500">Cenários Específicos</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                    <PromptCard title="Dia Nublado" icon={<Layout size={20} className="text-slate-400" />} prompt="Renderize essa imagem como se fosse foto real com todos revestimento reais da foto deixe como se fosse uma fotografia real no aspecto nublado sem sol" image="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80" />
+                    <PromptCard title="Dia Chuvoso" icon={<Layout size={20} className="text-blue-400" />} prompt="Renderize essa imagem como se fosse foto real com todos revestimento reais da foto deixe como se fosse uma fotografia real no aspecto dia chuvoso" image="https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=800&q=80" />
+                </div>
+            </div>
+        );
+
+        const PageInterior = () => (
+            <div className="animate-fadeIn max-w-4xl mx-auto">
+                <SectionHeader title="Interiores & Design" icon={<Armchair size={24} />} />
+                <div className="mb-12">
+                    <div className="bg-gradient-to-r from-blue-900/40 to-slate-900/40 border border-blue-500/30 rounded-xl p-1">
+                        <PromptCard title={mainPrompts.interiorMaster.title} description={mainPrompts.interiorMaster.description} icon={<Camera className="text-blue-400" />} prompt={mainPrompts.interiorMaster.prompt} image={mainPrompts.interiorMaster.image} />
+                    </div>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-6 pl-2 border-l-4 border-blue-500">Ambientes Específicos (WorkflowIA 60)</h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                    {categorizedPrompts.ambientes.map((item, idx) => <PromptCard key={idx} title={item.title} prompt={item.prompt} image={item.image} />)}
+                </div>
+                <div className="text-center text-slate-500 italic py-4">...e mais 5 prompts disponíveis no pacote completo.</div>
+            </div>
+        );
+
+        const PageVegetation = () => (
+            <div className="animate-fadeIn max-w-4xl mx-auto">
+                <SectionHeader title="Paisagismo & Backgrounds" icon={<Trees size={24} />} />
+                <div className="grid lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 className="text-xl font-bold text-green-400 mb-6 flex items-center gap-2"><Trees size={20} /> Vegetação Brasileira</h3>
+                        {categorizedPrompts.vegetacao.map((item, idx) => <PromptCard key={idx} title={item.title} prompt={item.prompt} image={item.image} />)}
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-cyan-400 mb-6 flex items-center gap-2"><Layout size={20} /> Backgrounds</h3>
+                        {categorizedPrompts.backgrounds.map((item, idx) => <PromptCard key={idx} title={item.title} prompt={item.prompt} image={item.image} />)}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const PageFurniture = () => (
+            <div className="animate-fadeIn max-w-4xl mx-auto">
+                <SectionHeader title="Mobiliário & Decoração" icon={<Sofa size={24} />} />
+                <div className="space-y-12">
+                    <div>
+                        <h3 className="text-xl font-bold text-orange-400 mb-6 pl-2 border-l-4 border-orange-500">Móveis de Área Externa</h3>
+                        <div className="grid md:grid-cols-2 gap-6">{categorizedPrompts.moveisExternos.map((item, idx) => <PromptCard key={idx} title={item.title} prompt={item.prompt} image={item.image} />)}</div>
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-pink-400 mb-6 pl-2 border-l-4 border-pink-500">Móveis de Sala</h3>
+                        <div className="grid md:grid-cols-2 gap-6">{categorizedPrompts.moveisSala.map((item, idx) => <PromptCard key={idx} title={item.title} prompt={item.prompt} image={item.image} />)}</div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- APP SHELL ---
+
+        function App() {
+            const [activeSection, setActiveSection] = useState('home');
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+            const navItems = [
+                { id: 'home', label: 'Início', icon: <BookOpen size={20} /> },
+                { id: 'generator', label: 'Gerador de prompts', icon: <Sparkles size={20} className="text-yellow-400" />, external: true, url: 'https://gemini.google.com/gem/1l8CzTIJzm0MUJCbxX9kSldlEJ9B_bbLh?usp=sharing' },
+                { id: 'exterior', label: 'Exteriores', icon: <Sun size={20} /> },
+                { id: 'interior', label: 'Interiores', icon: <Armchair size={20} /> },
+                { id: 'vegetation', label: 'Paisagismo', icon: <Trees size={20} /> },
+                { id: 'furniture', label: 'Mobiliário', icon: <Sofa size={20} /> },
+            ];
+
+            const renderContent = () => {
+                switch (activeSection) {
+                    case 'home': return <PageHome setSection={setActiveSection} />;
+                    case 'generator': return <PageGenerator />;
+                    case 'exterior': return <PageExterior />;
+                    case 'interior': return <PageInterior />;
+                    case 'vegetation': return <PageVegetation />;
+                    case 'furniture': return <PageFurniture />;
+                    default: return <PageHome />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-yellow-500/30 flex flex-col lg:flex-row">
+                    {/* Mobile Header */}
+                    <div className="lg:hidden flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+                        <span className="font-bold text-yellow-500 text-xl tracking-wider">Workflow IA</span>
+                        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-slate-300">
+                            {mobileMenuOpen ? <X /> : <Menu />}
+                        </button>
+                    </div>
+
+                    {/* Sidebar */}
+                    <aside className={`fixed lg:sticky lg:top-0 h-screen w-64 bg-slate-900 border-r border-slate-800 z-40 transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+                        <div className="p-6 border-b border-slate-800 hidden lg:block">
+                            <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 tracking-wider">Workflow IA</h1>
+                            <p className="text-xs text-slate-500 mt-1 tracking-widest uppercase">Prompt Engineering</p>
+                        </div>
+                        <nav className="p-4 space-y-2 mt-4">
+                            {navItems.map((item) => {
+                                if (item.external) {
+                                    return (
+                                        <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-slate-400 hover:bg-slate-800 hover:text-white">
+                                            {item.icon}<span>{item.label}</span>
+                                        </a>
+                                    );
+                                }
+                                return (
+                                    <button key={item.id} onClick={() => { setActiveSection(item.id); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${activeSection === item.id ? 'bg-yellow-500 text-slate-900 font-bold shadow-lg shadow-yellow-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                        {item.icon}<span>{item.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                        <div className="absolute bottom-0 w-full p-6 border-t border-slate-800">
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                Sistema Online v2.1
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="flex-1 p-4 lg:p-8 lg:max-w-[calc(100vw-256px)] overflow-x-hidden">
+                        {renderContent()}
+                        <footer className="mt-20 text-center text-slate-600 text-sm py-8 border-t border-slate-800">
+                            <p>© 2026 WorkflowIA - Material Educativo</p>
+                            <p className="mt-2">Otimizado para Gemini 1.5 Pro</p>
+                        </footer>
+                    </main>
+
+                    {/* Overlay */}
+                    {mobileMenuOpen && <div className="fixed inset-0 bg-black/50 z-30 lg:hidden backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)}></div>}
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
